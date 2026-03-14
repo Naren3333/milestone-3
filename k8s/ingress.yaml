@@ -1,31 +1,6 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: odoo
-  annotations:
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/proxy-body-size: "25m"
-spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - odoo.internal.example.com
-      secretName: odoo-tls
-  rules:
-    - host: odoo.internal.example.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: odoo
-                port:
-                  number: 8069
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
   name: moodle
   annotations:
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"

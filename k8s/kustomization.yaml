@@ -5,8 +5,6 @@ resources:
   - namespace.yaml
   - storage.yaml
   - secrets.template.yaml
-  - postgres.yaml
-  - odoo.yaml
   - mariadb.yaml
   - moodle.yaml
   - ingress.yaml
