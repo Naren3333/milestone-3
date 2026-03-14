@@ -1,0 +1,112 @@
+name: ${COMPOSE_PROJECT_NAME:-esmos-healthcare}
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: esmos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-odoo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-odoo}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-odoo} -d ${POSTGRES_DB:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  odoo:
+    image: odoo:17
+    container_name: esmos-odoo
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${ODOO_PORT:-8069}:8069"
+    environment:
+      HOST: postgres
+      PORT: 5432
+      USER: ${POSTGRES_USER:-odoo}
+      PASSWORD: ${POSTGRES_PASSWORD:-odoo}
+    volumes:
+      - odoo-data:/var/lib/odoo
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8069/web/login', timeout=5)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - backend
+
+  moodledb:
+    image: bitnami/mariadb:latest
+    container_name: esmos-mariadb
+    restart: unless-stopped
+    environment:
+      ALLOW_EMPTY_PASSWORD: "no"
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-rootpass}
+      MARIADB_DATABASE: ${MOODLE_DATABASE_NAME:-moodle}
+      MARIADB_USER: ${MOODLE_DATABASE_USER:-moodle}
+      MARIADB_PASSWORD: ${MOODLE_DATABASE_PASSWORD:-moodlepass}
+      MARIADB_CHARACTER_SET: utf8mb4
+      MARIADB_COLLATE: utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -uroot -p${MARIADB_ROOT_PASSWORD:-rootpass}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - moodledb-data:/bitnami/mariadb
+    networks:
+      - backend
+
+  moodle:
+    image: bitnamilegacy/moodle:5.0.2
+    container_name: esmos-moodle
+    restart: unless-stopped
+    depends_on:
+      moodledb:
+        condition: service_healthy
+    ports:
+      - "${MOODLE_PORT:-8080}:8080"
+    environment:
+      ALLOW_EMPTY_PASSWORD: "no"
+      MOODLE_DATABASE_TYPE: mariadb
+      MOODLE_DATABASE_HOST: moodledb
+      MOODLE_DATABASE_PORT_NUMBER: 3306
+      MOODLE_DATABASE_NAME: ${MOODLE_DATABASE_NAME:-moodle}
+      MOODLE_DATABASE_USER: ${MOODLE_DATABASE_USER:-moodle}
+      MOODLE_DATABASE_PASSWORD: ${MOODLE_DATABASE_PASSWORD:-moodlepass}
+      MOODLE_USERNAME: ${MOODLE_ADMIN_USER:-admin}
+      MOODLE_PASSWORD: ${MOODLE_ADMIN_PASSWORD:-ChangeMe123!}
+      MOODLE_EMAIL: ${MOODLE_ADMIN_EMAIL:-admin@example.com}
+      MOODLE_SITE_NAME: ${MOODLE_SITE_NAME:-ESMOS Healthcare Compliance Academy}
+      MOODLE_DATA_DIR: /bitnami/moodledata
+    healthcheck:
+      test: ["CMD-SHELL", "php -r \"exit(@file_get_contents('http://127.0.0.1:8080/login/index.php')===false ? 1 : 0);\""]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    volumes:
+      - moodle-data:/bitnami/moodle
+      - moodledata-data:/bitnami/moodledata
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  odoo-data:
+  postgres-data:
+  moodle-data:
+  moodledata-data:
+  moodledb-data:

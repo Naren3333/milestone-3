@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: esmos
+resources:
+  - namespace.yaml
+  - storage.yaml
+  - secrets.template.yaml
+  - postgres.yaml
+  - odoo.yaml
+  - mariadb.yaml
+  - moodle.yaml
+  - ingress.yaml
+  - networkpolicy.yaml
