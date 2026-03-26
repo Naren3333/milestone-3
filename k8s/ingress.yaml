@@ -2,18 +2,10 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: moodle
-  annotations:
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/whitelist-source-range: "10.0.0.0/8,192.168.0.0/16"
 spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - moodle.internal.example.com
-      secretName: moodle-tls
+  ingressClassName: webapprouting.kubernetes.azure.com
   rules:
-    - host: moodle.internal.example.com
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix

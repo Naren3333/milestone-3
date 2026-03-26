@@ -8,7 +8,7 @@ spec:
   ports:
     - name: http
       port: 8080
-      targetPort: 8080
+      targetPort: 80
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -28,12 +28,11 @@ spec:
     spec:
       containers:
         - name: moodle
-          image: bitnamilegacy/moodle:5.0.2
+          image: chocobar333/esmos-moodlehq:4.5
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8080
+            - containerPort: 80
           env:
-            - name: ALLOW_EMPTY_PASSWORD
-              value: "no"
             - name: MOODLE_DATABASE_TYPE
               value: mariadb
             - name: MOODLE_DATABASE_HOST
@@ -55,17 +54,17 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: MOODLE_DATABASE_PASSWORD
-            - name: MOODLE_USERNAME
+            - name: MOODLE_ADMIN_USER
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
                   key: MOODLE_ADMIN_USER
-            - name: MOODLE_PASSWORD
+            - name: MOODLE_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
                   key: MOODLE_ADMIN_PASSWORD
-            - name: MOODLE_EMAIL
+            - name: MOODLE_ADMIN_EMAIL
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
@@ -75,23 +74,27 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: MOODLE_SITE_NAME
+            - name: MOODLE_SHORT_NAME
+              value: ESMOS
+            - name: MOODLE_WWWROOT
+              value: https://moodle.internal.example.com
             - name: MOODLE_DATA_DIR
-              value: /bitnami/moodledata
+              value: /var/moodledata
+            - name: MOODLE_REVERSE_PROXY
+              value: "1"
           volumeMounts:
-            - name: moodle-data
-              mountPath: /bitnami/moodle
             - name: moodledata
-              mountPath: /bitnami/moodledata
+              mountPath: /var/moodledata
           readinessProbe:
             httpGet:
               path: /login/index.php
-              port: 8080
+              port: 80
             initialDelaySeconds: 45
             periodSeconds: 15
           livenessProbe:
             httpGet:
               path: /login/index.php
-              port: 8080
+              port: 80
             initialDelaySeconds: 90
             periodSeconds: 30
           resources:
@@ -102,9 +105,6 @@ spec:
               cpu: 1
               memory: 1Gi
       volumes:
-        - name: moodle-data
-          persistentVolumeClaim:
-            claimName: moodle-data-pvc
         - name: moodledata
           persistentVolumeClaim:
-            claimName: moodledata-pvc
+            claimName: moodledata-405-pvc

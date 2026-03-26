@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mariadb-data-pvc
+  name: mariadb-405-data-pvc
 spec:
   accessModes:
     - ReadWriteOnce
@@ -13,19 +13,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: moodle-data-pvc
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: azurefile-csi
-  resources:
-    requests:
-      storage: 10Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: moodledata-pvc
+  name: moodledata-405-pvc
 spec:
   accessModes:
     - ReadWriteMany

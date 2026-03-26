@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: moodledb
-          image: bitnami/mariadb:latest
+          image: bitnami/mariadb@sha256:c192707e6bb99702d5fdb924a61c06d82577913a11d85058fc900d4376105fc1
           ports:
             - containerPort: 3306
           env:
@@ -87,4 +87,4 @@ spec:
       volumes:
         - name: mariadb-data
           persistentVolumeClaim:
-            claimName: mariadb-data-pvc
+            claimName: mariadb-405-data-pvc

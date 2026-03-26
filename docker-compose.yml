@@ -2,7 +2,7 @@ name: ${COMPOSE_PROJECT_NAME:-esmos-healthcare}
 
 services:
   moodledb:
-    image: bitnami/mariadb:latest
+    image: bitnami/mariadb@sha256:c192707e6bb99702d5fdb924a61c06d82577913a11d85058fc900d4376105fc1
     container_name: esmos-mariadb
     restart: unless-stopped
     environment:
@@ -19,41 +19,44 @@ services:
       timeout: 5s
       retries: 10
     volumes:
-      - moodledb-data:/bitnami/mariadb
+      - moodledb-405-data:/bitnami/mariadb
     networks:
       - backend
 
   moodle:
-    image: bitnamilegacy/moodle:5.0.2
+    build:
+      context: .
+      dockerfile: docker/moodlehq/Dockerfile
+    image: esmos-moodlehq:4.5
     container_name: esmos-moodle
     restart: unless-stopped
     depends_on:
       moodledb:
         condition: service_healthy
     ports:
-      - "${MOODLE_PORT:-8080}:8080"
+      - "${MOODLE_PORT:-8080}:80"
     environment:
-      ALLOW_EMPTY_PASSWORD: "no"
       MOODLE_DATABASE_TYPE: mariadb
       MOODLE_DATABASE_HOST: moodledb
       MOODLE_DATABASE_PORT_NUMBER: 3306
       MOODLE_DATABASE_NAME: ${MOODLE_DATABASE_NAME:-moodle}
       MOODLE_DATABASE_USER: ${MOODLE_DATABASE_USER:-moodle}
       MOODLE_DATABASE_PASSWORD: ${MOODLE_DATABASE_PASSWORD:-moodlepass}
-      MOODLE_USERNAME: ${MOODLE_ADMIN_USER:-admin}
-      MOODLE_PASSWORD: ${MOODLE_ADMIN_PASSWORD:-ChangeMe123!}
-      MOODLE_EMAIL: ${MOODLE_ADMIN_EMAIL:-admin@example.com}
+      MOODLE_ADMIN_USER: ${MOODLE_ADMIN_USER:-admin}
+      MOODLE_ADMIN_PASSWORD: ${MOODLE_ADMIN_PASSWORD:-ChangeMe123!}
+      MOODLE_ADMIN_EMAIL: ${MOODLE_ADMIN_EMAIL:-admin@example.com}
       MOODLE_SITE_NAME: ${MOODLE_SITE_NAME:-ESMOS Healthcare Compliance Academy}
-      MOODLE_DATA_DIR: /bitnami/moodledata
+      MOODLE_SHORT_NAME: ${MOODLE_SHORT_NAME:-ESMOS}
+      MOODLE_WWWROOT: ${MOODLE_WWWROOT:-http://localhost:8080}
+      MOODLE_DATA_DIR: /var/moodledata
     healthcheck:
-      test: ["CMD-SHELL", "php -r \"exit(@file_get_contents('http://127.0.0.1:8080/login/index.php')===false ? 1 : 0);\""]
+      test: ["CMD-SHELL", "php -r \"exit(@file_get_contents('http://127.0.0.1/login/index.php')===false ? 1 : 0);\""]
       interval: 30s
       timeout: 10s
       retries: 10
       start_period: 120s
     volumes:
-      - moodle-data:/bitnami/moodle
-      - moodledata-data:/bitnami/moodledata
+      - moodledata-405-data:/var/moodledata
     networks:
       - backend
 
@@ -62,6 +65,5 @@ networks:
     driver: bridge
 
 volumes:
-  moodle-data:
-  moodledata-data:
-  moodledb-data:
+  moodledata-405-data:
+  moodledb-405-data:
