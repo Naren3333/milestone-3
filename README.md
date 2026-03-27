@@ -96,6 +96,12 @@ To use Uptime Kuma from your laptop:
 3. Keep that SSH session open.
 4. Open:
    `http://localhost:3002`
+5. Log in with the Uptime Kuma account you created earlier.
+
+Uptime Kuma persistence:
+
+- Uptime Kuma data is stored on the Kubernetes persistent volume claim `uptimekuma-data-pvc`
+- your monitors and login should still be there after the VM is stopped and started again
 
 ## Optional custom domain later
 
