@@ -5,7 +5,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: managed-csi
+  storageClassName: local-path
   resources:
     requests:
       storage: 20Gi
@@ -16,8 +16,20 @@ metadata:
   name: moodledata-405-pvc
 spec:
   accessModes:
-    - ReadWriteMany
-  storageClassName: azurefile-csi
+    - ReadWriteOnce
+  storageClassName: local-path
   resources:
     requests:
       storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: uptimekuma-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi

@@ -7,5 +7,5 @@ resources:
   - secrets.template.yaml
   - mariadb.yaml
   - moodle.yaml
-  - ingress.yaml
+  - uptimekuma.yaml
   - networkpolicy.yaml
