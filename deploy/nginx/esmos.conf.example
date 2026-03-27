@@ -1,6 +1,6 @@
 server {
     listen 80;
-    server_name moodle.example.com;
+    server_name moodlestaging.centralindia.cloudapp.azure.com;
 
     location / {
         proxy_pass http://127.0.0.1:30080;
@@ -14,9 +14,11 @@ server {
     }
 }
 
+# Optional: replace this hostname with your own custom status domain
+# if you want public HTTPS access to Uptime Kuma.
 server {
     listen 80;
-    server_name status.example.com;
+    server_name status.yourdomain.com;
 
     location / {
         proxy_pass http://127.0.0.1:30081;
