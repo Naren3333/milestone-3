@@ -44,8 +44,11 @@ Current VM details:
 4. Edit `k8s/secrets.template.yaml` and set:
    - strong database and admin passwords
    - `MOODLE_WWWROOT=https://moodlestaging.centralindia.cloudapp.azure.com`
+   - `MOODLE_REVERSE_PROXY="0"`
+   - `MOODLE_SSL_PROXY="1"`
 5. Apply the manifests:
    `sudo kubectl apply -k k8s`
+   This also updates the mounted Moodle entrypoint script, so HTTPS proxy fixes can be picked up without rebuilding the container image.
 6. Wait for pods:
    `sudo kubectl -n esmos get pods`
 7. Install Nginx on the VM.

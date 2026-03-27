@@ -90,7 +90,15 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: MOODLE_REVERSE_PROXY
+            - name: MOODLE_SSL_PROXY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MOODLE_SSL_PROXY
           volumeMounts:
+            - name: moodle-entrypoint
+              mountPath: /usr/local/bin/esmos-moodle-entrypoint
+              subPath: esmos-moodle-entrypoint
             - name: moodledata
               mountPath: /var/moodledata
           readinessProbe:
@@ -113,6 +121,10 @@ spec:
               cpu: 1
               memory: 1Gi
       volumes:
+        - name: moodle-entrypoint
+          configMap:
+            name: moodle-entrypoint
+            defaultMode: 0555
         - name: moodledata
           persistentVolumeClaim:
             claimName: moodledata-405-pvc
