@@ -63,6 +63,40 @@ Current VM details:
 12. In Uptime Kuma, add a monitor for:
    `https://moodlestaging.centralindia.cloudapp.azure.com/login/index.php`
 
+## Every time you start the VM
+
+On the VM:
+
+1. SSH in:
+   `ssh moodle_admin@moodlestaging.centralindia.cloudapp.azure.com`
+2. Go to the repo:
+   `cd ~/milestone-3`
+3. If `git pull` is blocked by local secret edits, back them up first:
+   `cp k8s/secrets.template.yaml ~/secrets.template.backup.yaml`
+4. Discard the repo copy of the secret template and pull the latest code:
+   `git restore k8s/secrets.template.yaml && git pull`
+5. Reapply your real secret values in `k8s/secrets.template.yaml`.
+6. Apply Kubernetes manifests:
+   `sudo kubectl apply -k k8s`
+7. Check that everything is healthy:
+   `sudo kubectl -n esmos get pods`
+8. Test Moodle:
+   `curl -k -I https://moodlestaging.centralindia.cloudapp.azure.com`
+
+Expected result:
+
+- `moodle`, `moodledb`, and `uptimekuma` should all be `1/1 Running`
+- the Moodle HTTPS check should return `HTTP/2 200`
+
+To use Uptime Kuma from your laptop:
+
+1. Open a terminal on your laptop, not on the VM.
+2. Create an SSH tunnel:
+   `ssh -L 3002:127.0.0.1:30081 moodle_admin@moodlestaging.centralindia.cloudapp.azure.com`
+3. Keep that SSH session open.
+4. Open:
+   `http://localhost:3002`
+
 ## Optional custom domain later
 
 If you later connect your own domain:
