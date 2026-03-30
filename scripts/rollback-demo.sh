@@ -21,6 +21,29 @@ if ! command -v kubectl >/dev/null 2>&1; then
   exit 1
 fi
 
+if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
+  BOLD=$'\033[1m'
+  RED=$'\033[31m'
+  YELLOW=$'\033[33m'
+  GREEN=$'\033[32m'
+  CYAN=$'\033[36m'
+  DIM=$'\033[2m'
+  RESET=$'\033[0m'
+else
+  BOLD=""
+  RED=""
+  YELLOW=""
+  GREEN=""
+  CYAN=""
+  DIM=""
+  RESET=""
+fi
+
+TERM_WIDTH="$(tput cols 2>/dev/null || echo 80)"
+WAIT_WIDTH=12
+WAIT_PAD=$(( (TERM_WIDTH - WAIT_WIDTH) / 2 ))
+(( WAIT_PAD < 0 )) && WAIT_PAD=0
+
 if [[ "$USE_SUDO" == "1" ]]; then
   KCTL=(sudo kubectl)
 else
@@ -29,6 +52,27 @@ fi
 
 kctl() {
   "${KCTL[@]}" "$@"
+}
+
+center_text() {
+  local text="$1"
+  local color="${2:-}"
+  local pad=$(( (TERM_WIDTH - ${#text}) / 2 ))
+  (( pad < 0 )) && pad=0
+  printf "%*s%b%s%b\n" "$pad" "" "$color" "$text" "$RESET"
+}
+
+print_stage() {
+  local text="$1"
+  local color="${2:-$CYAN}"
+  echo
+  center_text "$text" "${BOLD}${color}"
+}
+
+print_detail() {
+  local label="$1"
+  local value="$2"
+  printf "%b%-10s%b %s\n" "$DIM" "$label" "$RESET" "$value"
 }
 
 if ! kctl -n "$NAMESPACE" get deployment "$APP" >/dev/null 2>&1; then
@@ -54,12 +98,11 @@ render_wait_dots() {
     2) frame=". . ." ;;
   esac
 
-  printf "\r%-12s" "$frame"
+  printf "\r%*s%b%-12s%b" "$WAIT_PAD" "" "$CYAN" "$frame" "$RESET"
 }
 
 complete_wait_dots() {
-  printf "\r. . .       \n"
-  echo
+  printf "\r%*s%b%-12s%b\n" "$WAIT_PAD" "" "$GREEN" ". . ." "$RESET"
 }
 
 pod_ready() {
@@ -76,20 +119,20 @@ if [[ -z "$victim" ]]; then
 fi
 
 echo
-echo "=== Kubernetes Rollback Demo ==="
-echo "Namespace : $NAMESPACE"
-echo "App       : $APP"
-echo "Victim    : $victim"
-echo "Kubectl   : ${KCTL[*]}"
+center_text "LIVE DEMO" "${BOLD}${CYAN}"
+center_text "Kubernetes Self-Healing in Action" "$DIM"
 echo
-echo "Uh oh, pod is being killed."
+print_detail "Namespace:" "$NAMESPACE"
+print_detail "App:" "$APP"
+print_detail "Victim:" "$victim"
+print_detail "Kubectl:" "${KCTL[*]}"
+print_stage "Uh oh, pod is being killed." "$YELLOW"
 kctl -n "$NAMESPACE" get pods -l "app=$APP" -o wide
 echo
 
 kctl -n "$NAMESPACE" delete pod "$victim" --wait=false
 
-echo
-echo "Waiting for Kubernetes to summon the replacement..."
+print_stage "Waiting for Kubernetes to summon the replacement" "$CYAN"
 
 deadline=$((SECONDS + TIMEOUT_SECONDS))
 new_pod=""
@@ -114,8 +157,8 @@ if [[ -z "$new_pod" ]]; then
 fi
 
 complete_wait_dots
-echo "Replacement pod spotted: $new_pod"
-echo "Pod in progress of coming back to life..."
+print_stage "Replacement pod spotted: $new_pod" "$GREEN"
+print_stage "Pod in progress of coming back to life..." "$CYAN"
 deadline=$((SECONDS + TIMEOUT_SECONDS))
 start_time=$SECONDS
 
@@ -139,14 +182,14 @@ fi
 complete_wait_dots
 
 echo
-echo "Pod recovered. Current status:"
+print_stage "Pod recovered." "$GREEN"
+echo "Current status:"
 kctl -n "$NAMESPACE" get pods -l "app=$APP" -o wide
 
 if [[ "$APP" == "moodle" ]]; then
   echo
-  echo "Quick Moodle check:"
+  print_stage "Quick Moodle check" "$CYAN"
   curl -ksSI --max-time 10 "https://moodlestaging.centralindia.cloudapp.azure.com" | head -n 1
 fi
 
-echo
-echo "Demo complete. Kubernetes successfully recreated the pod."
+print_stage "Demo complete. Kubernetes successfully recreated the pod." "$GREEN"
