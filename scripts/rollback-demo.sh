@@ -4,6 +4,7 @@ set -euo pipefail
 NAMESPACE="${NAMESPACE:-esmos}"
 APP="${1:-moodle}"
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-180}"
+DISPLAY_SECONDS="${DISPLAY_SECONDS:-8}"
 USE_SUDO="${USE_SUDO:-1}"
 
 case "$APP" in
@@ -63,6 +64,11 @@ render_progress() {
   printf "] %3d%%" "$percent"
 }
 
+complete_progress() {
+  render_progress "$DISPLAY_SECONDS" "$DISPLAY_SECONDS"
+  echo
+}
+
 pod_ready() {
   local pod_name="$1"
   kctl -n "$NAMESPACE" get pod "$pod_name" \
@@ -99,23 +105,23 @@ start_time=$SECONDS
 while (( SECONDS < deadline )); do
   candidate="$(pick_victim || true)"
   elapsed=$((SECONDS - start_time))
-  render_progress "$elapsed" "$TIMEOUT_SECONDS"
+  render_progress "$elapsed" "$DISPLAY_SECONDS"
 
   if [[ -n "$candidate" && "$candidate" != "$victim" ]]; then
     new_pod="$candidate"
     break
   fi
 
-  sleep 2
+  sleep 1
 done
 
-echo
-
 if [[ -z "$new_pod" ]]; then
+  echo
   echo "A replacement pod did not appear within ${TIMEOUT_SECONDS}s."
   exit 1
 fi
 
+complete_progress
 echo "Replacement pod spotted: $new_pod"
 echo "Waiting for it to become Ready..."
 deadline=$((SECONDS + TIMEOUT_SECONDS))
@@ -124,21 +130,22 @@ start_time=$SECONDS
 while (( SECONDS < deadline )); do
   ready_state="$(pod_ready "$new_pod" || true)"
   elapsed=$((SECONDS - start_time))
-  render_progress "$elapsed" "$TIMEOUT_SECONDS"
+  render_progress "$elapsed" "$DISPLAY_SECONDS"
 
   if [[ "$ready_state" == "true" ]]; then
     break
   fi
 
-  sleep 2
+  sleep 1
 done
 
-echo
-
 if [[ "$(pod_ready "$new_pod" || true)" != "true" ]]; then
+  echo
   echo "The replacement pod appeared, but it did not become Ready within ${TIMEOUT_SECONDS}s."
   exit 1
 fi
+
+complete_progress
 
 echo
 echo "Pod recovered. Current status:"
@@ -147,7 +154,7 @@ kctl -n "$NAMESPACE" get pods -l "app=$APP" -o wide
 if [[ "$APP" == "moodle" ]]; then
   echo
   echo "Quick Moodle check:"
-  curl -k -I --max-time 10 "https://moodlestaging.centralindia.cloudapp.azure.com" | head -n 1
+  curl -ksSI --max-time 10 "https://moodlestaging.centralindia.cloudapp.azure.com" | head -n 1
 fi
 
 echo
