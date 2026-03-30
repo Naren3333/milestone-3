@@ -4,7 +4,7 @@ set -euo pipefail
 NAMESPACE="${NAMESPACE:-esmos}"
 APP="${1:-moodle}"
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-180}"
-DISPLAY_SECONDS="${DISPLAY_SECONDS:-8}"
+DOT_DELAY_SECONDS="${DOT_DELAY_SECONDS:-1}"
 USE_SUDO="${USE_SUDO:-1}"
 
 case "$APP" in
@@ -40,31 +40,25 @@ pick_victim() {
   kctl -n "$NAMESPACE" get pods \
     -l "app=$APP" \
     --field-selector=status.phase=Running \
-    -o jsonpath="{.items[0].metadata.name}"
+    --no-headers \
+    -o custom-columns=":metadata.name" 2>/dev/null | head -n 1
 }
 
-render_progress() {
-  local elapsed="$1"
-  local total="$2"
-  local width=24
-  local filled=0
-  local percent=0
-  local full_bar="########################"
-  local empty_bar="------------------------"
+render_wait_dots() {
+  local tick="$1"
+  local frame=""
 
-  if (( total > 0 )); then
-    percent=$(( elapsed * 100 / total ))
-    (( percent > 100 )) && percent=100
-    filled=$(( elapsed * width / total ))
-    (( filled > width )) && filled=width
-  fi
+  case $(( tick % 3 )) in
+    0) frame="." ;;
+    1) frame=". ." ;;
+    2) frame=". . ." ;;
+  esac
 
-  local empty=$(( width - filled ))
-  printf "\r[%s%s] %3d%%" "${full_bar:0:filled}" "${empty_bar:0:empty}" "$percent"
+  printf "\r%-12s" "$frame"
 }
 
-complete_progress() {
-  render_progress "$DISPLAY_SECONDS" "$DISPLAY_SECONDS"
+complete_wait_dots() {
+  printf "\r. . .       \n"
   echo
 }
 
@@ -103,15 +97,14 @@ start_time=$SECONDS
 
 while (( SECONDS < deadline )); do
   candidate="$(pick_victim || true)"
-  elapsed=$((SECONDS - start_time))
-  render_progress "$elapsed" "$DISPLAY_SECONDS"
+  render_wait_dots $((SECONDS - start_time))
 
   if [[ -n "$candidate" && "$candidate" != "$victim" ]]; then
     new_pod="$candidate"
     break
   fi
 
-  sleep 1
+  sleep "$DOT_DELAY_SECONDS"
 done
 
 if [[ -z "$new_pod" ]]; then
@@ -120,7 +113,7 @@ if [[ -z "$new_pod" ]]; then
   exit 1
 fi
 
-complete_progress
+complete_wait_dots
 echo "Replacement pod spotted: $new_pod"
 echo "Waiting for it to become Ready..."
 deadline=$((SECONDS + TIMEOUT_SECONDS))
@@ -128,14 +121,13 @@ start_time=$SECONDS
 
 while (( SECONDS < deadline )); do
   ready_state="$(pod_ready "$new_pod" || true)"
-  elapsed=$((SECONDS - start_time))
-  render_progress "$elapsed" "$DISPLAY_SECONDS"
+  render_wait_dots $((SECONDS - start_time))
 
   if [[ "$ready_state" == "true" ]]; then
     break
   fi
 
-  sleep 1
+  sleep "$DOT_DELAY_SECONDS"
 done
 
 if [[ "$(pod_ready "$new_pod" || true)" != "true" ]]; then
@@ -144,7 +136,7 @@ if [[ "$(pod_ready "$new_pod" || true)" != "true" ]]; then
   exit 1
 fi
 
-complete_progress
+complete_wait_dots
 
 echo
 echo "Pod recovered. Current status:"
