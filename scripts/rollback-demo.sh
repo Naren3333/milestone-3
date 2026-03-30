@@ -82,7 +82,7 @@ echo "App       : $APP"
 echo "Victim    : $victim"
 echo "Kubectl   : ${KCTL[*]}"
 echo
-echo "Thanos is here to wipe out a pod."
+echo "Uh oh, pod is being killed."
 kctl -n "$NAMESPACE" get pods -l "app=$APP" -o wide
 echo
 
@@ -115,7 +115,7 @@ fi
 
 complete_wait_dots
 echo "Replacement pod spotted: $new_pod"
-echo "Waiting for it to become Ready..."
+echo "Pod in progress of coming back to life..."
 deadline=$((SECONDS + TIMEOUT_SECONDS))
 start_time=$SECONDS
 
