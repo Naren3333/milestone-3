@@ -103,6 +103,32 @@ Uptime Kuma persistence:
 - Uptime Kuma data is stored on the Kubernetes persistent volume claim `uptimekuma-data-pvc`
 - your monitors and login should still be there after the VM is stopped and started again
 
+## Live rollback demo
+
+If you want to show Kubernetes self-healing during a demo:
+
+1. SSH into the VM and go to the repo:
+   `cd ~/milestone-3`
+2. Run the demo script against Moodle:
+   `bash scripts/rollback-demo.sh moodle`
+3. Watch Kubernetes delete the current Moodle pod and bring up a replacement pod automatically.
+
+You can also target:
+
+- `bash scripts/rollback-demo.sh moodle`
+- `bash scripts/rollback-demo.sh moodledb`
+- `bash scripts/rollback-demo.sh uptimekuma`
+
+What it does:
+
+- picks one running pod for the app
+- deletes that pod
+- waits for the replacement pod to appear
+- waits until the new pod is `Ready`
+- for Moodle, it also does a quick HTTPS check at the end
+
+This is a safe demo of Kubernetes self-healing because you are deleting a pod, not deleting the deployment or persistent data.
+
 ## Optional custom domain later
 
 If you later connect your own domain:
