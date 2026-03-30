@@ -4,6 +4,7 @@ set -euo pipefail
 NAMESPACE="${NAMESPACE:-esmos}"
 APP="${1:-moodle}"
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-180}"
+USE_SUDO="${USE_SUDO:-1}"
 
 case "$APP" in
   moodle|moodledb|uptimekuma)
@@ -19,13 +20,23 @@ if ! command -v kubectl >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! kubectl -n "$NAMESPACE" get deployment "$APP" >/dev/null 2>&1; then
+if [[ "$USE_SUDO" == "1" ]]; then
+  KCTL=(sudo kubectl)
+else
+  KCTL=(kubectl)
+fi
+
+kctl() {
+  "${KCTL[@]}" "$@"
+}
+
+if ! kctl -n "$NAMESPACE" get deployment "$APP" >/dev/null 2>&1; then
   echo "Deployment '$APP' was not found in namespace '$NAMESPACE'."
   exit 1
 fi
 
 pick_victim() {
-  kubectl -n "$NAMESPACE" get pods \
+  kctl -n "$NAMESPACE" get pods \
     -l "app=$APP" \
     --field-selector=status.phase=Running \
     -o jsonpath="{.items[0].metadata.name}"
@@ -54,7 +65,7 @@ render_progress() {
 
 pod_ready() {
   local pod_name="$1"
-  kubectl -n "$NAMESPACE" get pod "$pod_name" \
+  kctl -n "$NAMESPACE" get pod "$pod_name" \
     -o jsonpath="{.status.containerStatuses[0].ready}" 2>/dev/null
 }
 
@@ -70,12 +81,13 @@ echo "=== Kubernetes Rollback Demo ==="
 echo "Namespace : $NAMESPACE"
 echo "App       : $APP"
 echo "Victim    : $victim"
+echo "Kubectl   : ${KCTL[*]}"
 echo
 echo "Thanos is here to wipe out a pod."
-kubectl -n "$NAMESPACE" get pods -l "app=$APP" -o wide
+kctl -n "$NAMESPACE" get pods -l "app=$APP" -o wide
 echo
 
-kubectl -n "$NAMESPACE" delete pod "$victim" --wait=false
+kctl -n "$NAMESPACE" delete pod "$victim" --wait=false
 
 echo
 echo "Waiting for Kubernetes to summon the replacement..."
@@ -130,7 +142,7 @@ fi
 
 echo
 echo "Pod recovered. Current status:"
-kubectl -n "$NAMESPACE" get pods -l "app=$APP" -o wide
+kctl -n "$NAMESPACE" get pods -l "app=$APP" -o wide
 
 if [[ "$APP" == "moodle" ]]; then
   echo

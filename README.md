@@ -113,6 +113,8 @@ If you want to show Kubernetes self-healing during a demo:
    `bash scripts/rollback-demo.sh moodle`
 3. Watch Kubernetes delete the current Moodle pod and bring up a replacement pod automatically.
 
+The script uses `sudo kubectl` by default on the VM, so it matches the same K3s access pattern used elsewhere in this README.
+
 You can also target:
 
 - `bash scripts/rollback-demo.sh moodle`
