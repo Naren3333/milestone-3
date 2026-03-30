@@ -49,6 +49,8 @@ render_progress() {
   local width=24
   local filled=0
   local percent=0
+  local full_bar="########################"
+  local empty_bar="------------------------"
 
   if (( total > 0 )); then
     percent=$(( elapsed * 100 / total ))
@@ -58,10 +60,7 @@ render_progress() {
   fi
 
   local empty=$(( width - filled ))
-  printf "\r["
-  printf "%${filled}s" "" | tr " " "#"
-  printf "%${empty}s" "" | tr " " "-"
-  printf "] %3d%%" "$percent"
+  printf "\r[%s%s] %3d%%" "${full_bar:0:filled}" "${empty_bar:0:empty}" "$percent"
 }
 
 complete_progress() {
